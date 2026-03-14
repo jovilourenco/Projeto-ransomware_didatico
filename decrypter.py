@@ -17,12 +17,12 @@ def decrypt(file, key):
     except:
         None
 
-def listdir(path):
+def listdir(path): # Irá listar os diretórios recursivamente até encontrar todos os arquivos.
     try:
         for file in os.listdir(path):
             if os.path.isdir(f"{path}{file}"):
                 dirs.append(f"{path}{file}/")
-            elif file.split(".")[-1] == "enc":
+            elif file.split(".")[-1] == "enc": # A diferença é que não precisamos de checkfile. Se o arquivo for .enc, já sabemos que queremos descriptá-lo
                 files.append(f"{path}{file}")
 
     except PermissionError:
@@ -42,7 +42,7 @@ if len(dirs) > 0:
     for t in threads:
         t.join()
 
-key = b'112n0UZYTl_WAgDmnoyiBSOtTCOjd-mmswBl4ovCueY='
+key = b'apJsqTlydjIq36mPlDyURQ1Ebi5HyTLqMLOprTZjsgM=' # Aqui vai a chave gerada no console ao rodar o ecripter
 for file in files:
     t = threading.Thread(target=decrypt, args=(file, key,))
     t.start()
