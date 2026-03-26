@@ -1,0 +1,8 @@
+# Bibliotecas principais do Ransomware e Servidor
+cryptography
+
+# Biblioteca para o módulo de propagação lateral (Worm)
+paramiko
+
+# Biblioteca para empacotamento em executável
+pyinstaller

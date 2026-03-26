@@ -22,7 +22,53 @@ O projeto utiliza um sistema de **criptografia híbrida**:
     * `worm.py`: Módulo de propagação lateral via SSH e força bruta.
     * `client.py`: Realiza a conexão com o servidor do atacante.
     * `decrypter.py`: Interface para descriptografar os arquivos após o "pagamento".
+## 🛠️ Pré-requisitos
 
+*   Python 3.x
+*   Biblioteca `cryptography`
+*   Biblioteca `paramiko`
+
+Instale as dependências com:
+```bash
+pip install cryptography
+```
+```bash
+pip install paramiko
+```
+ou 
+```bash
+pip install -r requirements.txt
+```
+
+## 📖 Passo a Passo de Uso
+
+### Atacante
+
+1.  **Gerar Chaves:**
+    ```bash
+    python generate_keys.py
+    ```
+    Isso criará os arquivos `.pem`. Em um cenário real, a `private_key.pem` nunca sairia da máquina do atacante.
+
+2.  **Iniciar o servidor:**
+    ```bash
+    python server.py
+    ```
+    Inicia o servidor para receber as execuções do ransomware.
+
+### Vítima
+
+1.  **Criptografar:**
+    ```bash
+    python ransomware.py
+    ```
+    Os arquivos na pasta (ambiente controlado) serão substituídos por versões `.enc` e uma chave protegida `key.bin.enc` será gerada.
+
+2.  **Descriptografar:**
+    ```bash
+    python decrypter.py
+    ```
+    Usa a chave enviada pelo atacante após o resgate.
 ## 🛠️ Laboratório de Teste (3 VMs)
 
 Para testar a funcionalidade de **Worm** (propagação), recomenda-se o uso de três máquinas virtuais em uma **Rede Interna** isolada.
@@ -47,7 +93,7 @@ sudo ufw disable
 Transformar o script em um binário permite que ele rode em sistemas sem Python ou bibliotecas instaladas.
 
 ### 1. Preparar o Pacote de Propagação
-O worm enviará um arquivo ZIP contendo o executável e recursos:
+O worm enviará um executável:
 ```bash
 zip -r ex.zip ransomware.py client.py alert_show.py public_key.pem assets/
 ```
