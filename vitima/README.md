@@ -1,6 +1,7 @@
+
 # Projeto Ransomware Didático (RSA-2048)
 
-Este projeto é uma ferramenta educacional desenvolvida para demonstrar o funcionamento técnico de um ataque de ransomware e a eficácia da criptografia híbrida (Sinuosa + Assimétrica) na prevenção da recuperação de arquivos sem a chave correta.
+Este projeto é uma ferramenta educacional desenvolvida para demonstrar o funcionamento técnico de um ataque de ransomware e a eficácia da criptografia híbrida na prevenção da recuperação de arquivos sem a chave correta.
 
 > [!WARNING]
 > **AVISO LEGAL:** Este projeto foi criado estritamente para fins didáticos e educacionais. O uso deste software para atividades maliciosas em sistemas de terceiros sem autorização explícita é ilegal e antiético.
@@ -8,84 +9,81 @@ Este projeto é uma ferramenta educacional desenvolvida para demonstrar o funcio
 ## 🚀 Como Funciona
 
 O projeto utiliza um sistema de **criptografia híbrida**:
-1.  **Criptografia Simétrica (AES/Fernet):** Usada para criptografar os arquivos reais de forma rápida e eficiente.
-2.  **Criptografia Assimétrica (RSA-2048):** Usada para proteger a chave simétrica. A chave pública criptografa a chave AES (que criptograda os arquivos), e apenas a chave privada correspondente pode descriptografá-la.
-
-Desta forma, mesmo que a vítima tenha acesso ao código do ransomware, ela não consegue descriptografar os arquivos sem a **chave privada** que permanece com o atacante.
+1.  **Criptografia Simétrica (AES/Fernet):** Usada para criptografar os arquivos reais de forma rápida.
+2.  **Criptografia Assimétrica (RSA-2048):** Usada para proteger a chave simétrica. A chave pública criptografa a chave AES, e apenas a chave privada correspondente pode descriptografá-la.
 
 ## 📂 Estrutura do Projeto
 
-Atacante:
+* **Atacante**: 
+    * `generate_keys.py`: Gera o par de chaves RSA-2048.
+    * `server.py`: Servidor que recebe a chave AES criptografada.
+* **Vítima**:
+    * `ransomware.py`: Script principal de criptografia.
+    * `worm.py`: Módulo de propagação lateral via SSH e força bruta.
+    * `client.py`: Realiza a conexão com o servidor do atacante.
+    * `decrypter.py`: Interface para descriptografar os arquivos após o "pagamento".
 
-*   `generate_keys.py`: Código auxiliar para gerar o par de chaves RSA-2048 (`public_key.pem` (no cliente) e `private_key.pem`).
-*   `server.py`: Arquivo que inicia o servidor e fica "escutando" qualquer execução do ransomware. Ele quem recebe a chave AES criptografada e a retorna descriptografada (Repassada quando a vítima "pagar" o resgate).
+## 🛠️ Laboratório de Teste (3 VMs)
 
-Vítima:
+Para testar a funcionalidade de **Worm** (propagação), recomenda-se o uso de três máquinas virtuais em uma **Rede Interna** isolada.
 
-*   `ransomware.py`: O script que localiza arquivos (atualmente limitados a certos Mime types para segurança), gera uma chave de sessão, criptografa os arquivos com chave AES, criptografa a chave AES com RSA 2048 e envia para o hacker.
-*   `client.py`: Código auxiliar utilizado quando o cliente executar o ransomware. Ele que fará a conexão para enviar a chave AES criptografada para o atacante.
-*   `alert_show.py`: Código auxiliar utilizado para exibir um alerta à vítima.
-*   `decrypter.py`: Cria uma pequena interface para que a vítima (após contato e pagamento de resgate) insira a chave AES para descriptografar os arquivos.
+| Máquina | IP Sugerido | Papel |
+| :--- | :--- | :--- |
+| **Atacante** | `192.168.1.40` | Hospeda o `server.py` e a chave privada. |
+| **Vítima 1** | `192.168.1.10` | Ponto inicial da infecção. |
+| **Vítima 2** | `192.168.1.11` | Alvo da propagação via SSH. |
 
-## 🛠️ Pré-requisitos
-
-*   Python 3.x
-*   Biblioteca `cryptography`
-
-Instale as dependências com:
+### Preparação do Alvo (Vítima 2)
+Certifique-se de que o SSH está ativo e com um usuário vulnerável:
 ```bash
-pip install cryptography
+sudo apt install openssh-server unzip
+sudo useradd -m -s /bin/bash aluno
+echo "aluno:senha123" | sudo chpasswd
+sudo ufw disable
+```
+
+## 📦 Criação do Executável (Linux)
+
+Transformar o script em um binário permite que ele rode em sistemas sem Python ou bibliotecas instaladas.
+
+### 1. Preparar o Pacote de Propagação
+O worm enviará um arquivo ZIP contendo o executável e recursos:
+```bash
+zip -r ex.zip ransomware.py client.py alert_show.py public_key.pem assets/
+```
+
+### 2. Compilar com PyInstaller
+```bash
+pip install pyinstaller cryptography paramiko
+
+pyinstaller --onefile \
+            --add-data "public_key.pem:." \
+            --add-data "assets/alert_image.png:assets" \
+            --add-data "ex.zip:." \
+            ransomware.py
 ```
 
 ## 📖 Passo a Passo de Uso
 
 ### Atacante
-
-1.  **Gerar Chaves:**
-    ```bash
-    python generate_keys.py
-    ```
-    Isso criará os arquivos `.pem`. Em um cenário real, a `private_key.pem` nunca sairia da máquina do atacante.
-
-2.  **Iniciar o servidor:**
-    ```bash
-    python server.py
-    ```
-    Inicia o servidor para receber as execuções do ransomware.
+1.  **Gerar Chaves:** `python3 generate_keys.py`.
+2.  **Iniciar Servidor:** `python3 server.py --host 192.168.1.40 --port 8000`.
 
 ### Vítima
-
-1.  **Criptografar:**
+1.  **Criptografia Local:**
     ```bash
-    python ransomware.py
+    python3 ransomware.py
     ```
-    Os arquivos na pasta (ambiente controlado) serão substituídos por versões `.enc` e uma chave protegida `key.bin.enc` será gerada.
-
-2.  **Descriptografar:**
+2.  **Criptografia + Propagação Worm:**
     ```bash
-    python decrypter.py
+    python3 ransomware.py --worm
     ```
-    Usa a chave enviada pelo atacante após o resgate.
+3.  **Descriptografar:** Use o `decrypter.py` com a chave recuperada no servidor do atacante.
 
-## 🧪 Demonstração de Falha (O "Ataque" Real)
+## 🧪 Demonstração de Falha
+Para provar que a recuperação é impossível sem a chave original:
+1.  Criptografe os arquivos.
+2.  Gere novas chaves RSA, substituindo a antiga.
+3.  Tente descriptografar. O processo falhará pois a nova chave privada não pode abrir o `key.bin.enc` antigo.
 
-Para demonstrar que a recuperação é impossível sem a chave privada correta:
-
-1.  Crie arquivos na pasta `arquivos_teste/`.
-2.  Gere as chaves (`python generate_keys.py`).
-3.  Execute o servidor (`python server.py`).
-4.  Criptografe os arquivos (`python ransomware.py`).
-5.  Gere as chaves novamente (`python generate_keys.py`).
-6.  Execute o decrypter (`python decrypter.py`).
-7.  Insira uma chave qualquer no decrypter.
-8.  **Resultado:** O script falhará em descriptografar os arquivos, pois a nova chave privada não consegue abrir a chave de sessão protegida pela chave pública antiga.
-
-## 🤖 Scripts de Automação (Windows)
-
-Para facilitar a demonstração, você pode usar os scripts em lote fornecidos:
-
-*   `teste_sucesso.bat`: Executa o fluxo completo e restaura os arquivos.
-*   `teste_falha.bat`: Demonstra a impossibilidade de recuperação ao trocar de chaves.
-
----
 Desenvolvido para fins de estudo sobre segurança da informação.
